@@ -20,17 +20,19 @@ interface PrintInvoiceProps {
 export function PrintInvoice({ companyInfo, clientInfo, accessories, totals }: PrintInvoiceProps) {
   return (
     <div className="hidden print:block p-8 max-w-4xl mx-auto bg-white">
-      <div className="border-b pb-4 mb-4">
-        <h1 className="text-2xl font-bold">{companyInfo.name}</h1>
-        <p className="text-sm text-gray-600">{companyInfo.description}</p>
-        <p className="text-sm">{companyInfo.location}</p>
-        <p className="text-sm">{companyInfo.contact}</p>
-        <a
-          href={`https://${companyInfo.website}`}
-          className="text-sm text-blue-600"
-        >
-          {companyInfo.website}
-        </a>
+      <div className="flex justify-between items-center border-b pb-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold">{companyInfo.name}</h1>
+          <p className="text-sm text-gray-600">{companyInfo.description}</p>
+          <p className="text-sm">{companyInfo.location}</p>
+          <p className="text-sm">{companyInfo.contact}</p>
+          <a href={`https://${companyInfo.website}`} className="text-sm text-blue-600">
+            {companyInfo.website}
+          </a>
+        </div>
+        <div className="text-right">
+          <img src="/logo-placeholder.png" alt="Logo" className="h-12" />
+        </div>
       </div>
 
       <h2 className="text-xl font-semibold mb-4">PROFORMA INVOICE</h2>
@@ -67,8 +69,8 @@ export function PrintInvoice({ companyInfo, clientInfo, accessories, totals }: P
               </tr>
             </thead>
             <tbody>
-              {accessories.map((item) => (
-                <tr key={item.id} className="border-b">
+              {accessories.map((item, index) => (
+                <tr key={item.id} className="border-b" style={{ pageBreakInside: index > 20 ? "avoid" : "auto" }}>
                   <td className="py-2 px-2">{item.name}</td>
                   <td className="text-center py-2 px-2">${item.unitPrice.toFixed(2)}</td>
                   <td className="text-center py-2 px-2">{item.quantity}</td>
@@ -127,7 +129,8 @@ export function PrintInvoice({ companyInfo, clientInfo, accessories, totals }: P
           body * {
             visibility: hidden;
           }
-          .print:block, .print:block * {
+          .print:block,
+          .print:block * {
             visibility: visible;
           }
           .print:block {

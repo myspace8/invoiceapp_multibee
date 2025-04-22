@@ -1,36 +1,39 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState } from "react"
+import { useFormContext } from "react-hook-form"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  SheetFooter,
-  SheetClose,
 } from "@/components/ui/sheet"
-import { PlusCircle, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
-import { Accessory, SelectedAccessory } from "@/types/invoice"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { FormControl, FormField, FormItem } from "@/components/ui/form"
+import { InvoiceFormData } from "./CreateInvoice"
 
 interface AccessoriesSectionProps {
-  selectedAccessories: SelectedAccessory[]
-  modalSelections: string[]
-  sheetOpen: boolean
   expanded: boolean
   onToggle: () => void
-  onQuantityChange: (id: string, quantity: number) => void
-  onRemoveAccessory: (id: string) => void
-  onModalSelectionChange: (id: string, checked: boolean) => void
-  onAddAccessories: () => void
-  onSheetOpenChange: (open: boolean) => void
 }
 
-const availableAccessories: Accessory[] = [
+const availableAccessories = [
   { id: "acc1", name: "MB HIPCAP WRINKLING", unitPrice: 142.5 },
   { id: "acc2", name: "MB RAINGUTTER WRINKLING", unitPrice: 141.0 },
   { id: "acc3", name: "ROOF SHEET STANDARD", unitPrice: 185.75 },
@@ -41,18 +44,37 @@ const availableAccessories: Accessory[] = [
   { id: "acc8", name: "SEALANT TUBE", unitPrice: 12.75 },
 ]
 
-export function AccessoriesSection({
-  selectedAccessories,
-  modalSelections,
-  sheetOpen,
-  expanded,
-  onToggle,
-  onQuantityChange,
-  onRemoveAccessory,
-  onModalSelectionChange,
-  onAddAccessories,
-  onSheetOpenChange,
-}: AccessoriesSectionProps) {
+export function AccessoriesSection({ expanded, onToggle }: AccessoriesSectionProps) {
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [modalSelections, setModalSelections] = useState<string[]>([])
+  const form = useFormContext<InvoiceFormData>()
+
+  const handleModalSelectionChange = (id: string, checked: boolean) => {
+    setModalSelections((prev) =>
+      checked ? [...prev, id] : prev.filter((existingId) => existingId !== id)
+    )
+  }
+
+  const handleAddAccessories = () => {
+    const currentAccessories = form.getValues("accessories") || []
+    const newAccessories = modalSelections
+      .filter((id) => !currentAccessories.some((item) => item.id === id))
+      .map((id) => {
+        const accessory = availableAccessories.find((a) => a.id === id)!
+        return {
+          ...accessory,
+          quantity: 1,
+          total: accessory.unitPrice,
+        }
+      })
+
+    form.setValue("accessories", [...currentAccessories, ...newAccessories], {
+      shouldValidate: true,
+    })
+    setSheetOpen(false)
+    setModalSelections([])
+  }
+
   return (
     <Card>
       <CardHeader
@@ -69,107 +91,112 @@ export function AccessoriesSection({
 
       {expanded && (
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-2 font-medium">ACCESSORIES</th>
-                  <th className="text-center py-3 px-2 font-medium">UNIT PRICE</th>
-                  <th className="text-center py-3 px-2 font-medium">QUANTITY</th>
-                  <th className="text-right py-3 px-2 font-medium">TOTAL</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedAccessories.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                      No accessories added yet. Click "Add Item" to select accessories.
-                    </td>
-                  </tr>
-                ) : (
-                  selectedAccessories.map((item) => (
-                    <tr key={item.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-2">{item.name}</td>
-                      <td className="text-center py-3 px-2">{item.unitPrice.toFixed(2)}</td>
-                      <td className="text-center py-3 px-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => onQuantityChange(item.id, Number.parseInt(e.target.value) || 1)}
-                          className="w-20 mx-auto text-center"
-                        />
-                      </td>
-                      <td className="text-right py-3 px-2">{item.total.toFixed(2)}</td>
-                      <td className="py-3 px-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onRemoveAccessory(item.id)}
-                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-                <tr>
-                  <td colSpan={5} className="py-2">
-                    <Sheet open={sheetOpen} onOpenChange={onSheetOpenChange}>
-                      <SheetTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                          <PlusCircle className="h-4 w-4" />
-                          Add Item
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="right" className="w-full sm:max-w-md">
-                        <SheetHeader>
-                          <SheetTitle>Select Accessories</SheetTitle>
-                          <SheetDescription>
-                            Choose the accessories you want to add to your invoice.
-                          </SheetDescription>
-                        </SheetHeader>
-                        <div className="mt-6">
-                          <ScrollArea className="h-[60vh]">
-                            <div className="space-y-4 pr-4">
-                              {availableAccessories.map((accessory) => (
-                                <div key={accessory.id} className="flex items-center space-x-2 border-b pb-2">
-                                  <Checkbox
-                                    id={`accessory-${accessory.id}`}
-                                    checked={modalSelections.includes(accessory.id)}
-                                    onCheckedChange={(checked) => onModalSelectionChange(accessory.id, !!checked)}
-                                  />
-                                  <div className="flex flex-1 justify-between items-center">
-                                    <Label
-                                      htmlFor={`accessory-${accessory.id}`}
-                                      className="flex-1 cursor-pointer"
-                                    >
-                                      {accessory.name}
-                                    </Label>
-                                    <span className="text-sm font-medium">${accessory.unitPrice.toFixed(2)}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                        </div>
-                        <SheetFooter className="mt-6 flex justify-between sm:justify-between">
-                          <SheetClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                          </SheetClose>
-                          <Button onClick={onAddAccessories} disabled={modalSelections.length === 0}>
-                            Add Selected ({modalSelections.length})
-                          </Button>
-                        </SheetFooter>
-                      </SheetContent>
-                    </Sheet>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="mb-4">
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Accessories
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Select Accessories</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 space-y-4">
+                  {availableAccessories.map((accessory) => (
+                    <div key={accessory.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={accessory.id}
+                        checked={modalSelections.includes(accessory.id)}
+                        onCheckedChange={(checked) =>
+                          handleModalSelectionChange(accessory.id, !!checked)
+                        }
+                      />
+                      <label htmlFor={accessory.id} className="flex-1">
+                        {accessory.name} (${accessory.unitPrice.toFixed(2)})
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <Button className="mt-6 w-full" onClick={handleAddAccessories}>
+                  Add Selected
+                </Button>
+              </SheetContent>
+            </Sheet>
           </div>
+
+          <FormField
+            control={form.control}
+            name="accessories"
+            render={({ field }) => (
+              <FormItem>
+                {field.value.length === 0 ? (
+                  <p className="text-center text-muted-foreground">
+                    No accessories added yet.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Accessory</TableHead>
+                        <TableHead className="text-center">Unit Price</TableHead>
+                        <TableHead className="text-center">Quantity</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {field.value.map((item, index) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell className="text-center">
+                            ${item.unitPrice.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const quantity = Math.max(1, parseInt(e.target.value) || 1)
+                                const updatedAccessories = [...field.value]
+                                updatedAccessories[index] = {
+                                  ...item,
+                                  quantity,
+                                  total: quantity * item.unitPrice,
+                                }
+                                field.onChange(updatedAccessories)
+                              }}
+                              className="w-16 mx-auto"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ${item.total.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const updatedAccessories = field.value.filter(
+                                  (_, i) => i !== index
+                                )
+                                field.onChange(updatedAccessories)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                <FormItem />
+              </FormItem>
+            )}
+          />
         </CardContent>
       )}
     </Card>

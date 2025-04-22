@@ -9,17 +9,19 @@ export interface SelectedAccessory extends Accessory {
   total: number
 }
 
+export interface ClientInfo {
+  client: string
+  location?: string
+  contact?: string
+  date: string
+  gauge: string
+  cmpPercentage: number
+  paymentMethod: "Cash" | "Bank" | "Mobile Money"
+}
+
 export interface SavedInvoice {
   id: string
-  clientInfo: {
-    client: string
-    location: string
-    contact: string
-    date: string
-    gauge: string
-    cmpPercentage: number
-    paymentMethod: string
-  }
+  clientInfo: ClientInfo
   accessories: SelectedAccessory[]
   totals: {
     subtotal: number
@@ -35,17 +37,28 @@ export interface SavedInvoice {
   createdAt: string
 }
 
-export interface ClientInfo {
-  client: string
-  location: string
-  contact: string
-  date: string
-}
-
 export interface CompanyInfo {
   name: string
   description: string
   location: string
   contact: string
   website: string
+}
+
+export interface InvoiceTemplate {
+  id: string
+  name: string
+  clientInfo: ClientInfo
+  accessories: SelectedAccessory[]
+}
+
+export interface Settings {
+  companyInfo: CompanyInfo
+  defaultGauge: string
+  defaultTaxRates: {
+    nihil: number
+    getFund: number
+    covid: number
+    vat: number
+  }
 }

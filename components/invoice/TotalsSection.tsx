@@ -1,50 +1,28 @@
+import { useFormContext } from "react-hook-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { ChevronDown, ChevronUp } from "lucide-react"
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { calculateInvoiceTotals } from "@/utils/invoiceUtils"
+import { InvoiceFormData } from "./CreateInvoice"
 
 interface TotalsSectionProps {
-  totals: {
-    subtotal: number
-    nihil: number
-    getFund: number
-    covid: number
-    vat: number
-    discount: number
-    transportation: number
-    installation: number
-    grandTotal: number
-  }
-  discountPercentage: number
-  transportationCost: number
-  installationPercentage: number
   expanded: boolean
   onToggle: () => void
-  onDiscountChange: (percent: number) => void
-  onTransportationChange: (cost: number) => void
-  onInstallationChange: (percent: number) => void
 }
 
-const discountOptions = [0, 5, 10, 15]
-const installationOptions = [0, 5, 10, 15]
+export function TotalsSection({ expanded, onToggle }: TotalsSectionProps) {
+  const form = useFormContext<InvoiceFormData>()
+  const { accessories, discountPercentage, transportationCost, installationPercentage } =
+    form.watch()
 
-export function TotalsSection({
-  totals,
-  discountPercentage,
-  transportationCost,
-  installationPercentage,
-  expanded,
-  onToggle,
-  onDiscountChange,
-  onTransportationChange,
-  onInstallationChange,
-}: TotalsSectionProps) {
+  const totals = calculateInvoiceTotals(
+    accessories || [],
+    discountPercentage || 0,
+    transportationCost || 0,
+    installationPercentage || 0
+  )
+
   return (
     <Card>
       <CardHeader
@@ -60,88 +38,108 @@ export function TotalsSection({
       </CardHeader>
 
       {expanded && (
-        <CardContent>
-          <div className="space-y-3 max-w-md ml-auto">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="discountPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Discount (%):</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="transportationCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Transportation Cost ($):</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="installationPercentage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Installation (%):</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="space-y-2 max-w-md ml-auto">
             <div className="flex justify-between">
-              <span className="font-medium">SUBTOTAL</span>
-              <span>{totals.subtotal.toFixed(2)}</span>
+              <span className="font-medium">Subtotal</span>
+              <span>${totals.subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">NIHIL (2.5%)</span>
-              <span>{totals.nihil.toFixed(2)}</span>
+              <span>${totals.nihil.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">GETFund (2.5%)</span>
-              <span>{totals.getFund.toFixed(2)}</span>
+              <span>${totals.getFund.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">COVID-19 (1%)</span>
-              <span>{totals.covid.toFixed(2)}</span>
+              <span>${totals.covid.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">VAT (15%)</span>
-              <span>{totals.vat.toFixed(2)}</span>
+              <span>${totals.vat.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">DISCOUNT</span>
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
-                      {discountPercentage}% <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {discountOptions.map((percent) => (
-                      <DropdownMenuItem
-                        key={percent}
-                        onClick={() => onDiscountChange(percent)}
-                      >
-                        {percent}%
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <span>-{totals.discount.toFixed(2)}</span>
-              </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Discount</span>
+              <span>-${totals.discount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">TRANSPORTATION</span>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={transportationCost.toFixed(2)}
-                onChange={(e) => onTransportationChange(Number(e.target.value) || 0)}
-                className="w-24 text-right"
-              />
+            <div className="flex justify-between">
+              <span className="font-medium">Transportation</span>
+              <span>${totals.transportation.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">INSTALLATION</span>
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
-                      {installationPercentage}% <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {installationOptions.map((percent) => (
-                      <DropdownMenuItem
-                        key={percent}
-                        onClick={() => onInstallationChange(percent)}
-                      >
-                        {percent}%
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <span>{totals.installation.toFixed(2)}</span>
-              </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Installation</span>
+              <span>${totals.installation.toFixed(2)}</span>
             </div>
             <div className="flex justify-between border-t pt-2 text-lg font-bold">
-              <span>GRAND TOTAL</span>
-              <span>{totals.grandTotal.toFixed(2)}</span>
+              <span>Grand Total</span>
+              <span>${totals.grandTotal.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>
